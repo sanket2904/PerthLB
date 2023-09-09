@@ -1,5 +1,5 @@
 mod backend;
-use std::{sync::{Arc, mpsc::Sender}, net::SocketAddr, collections::HashMap, str::FromStr, os::unix::thread};
+use std::{sync::Arc, net::SocketAddr, collections::HashMap, str::FromStr};
 use backend::Backend;
 use tokio::try_join;
 
@@ -38,7 +38,6 @@ impl Server {
                         let listen_addr:SocketAddr = FromStr::from_str(&addr.addr).ok().unwrap();
                         backend.insert(listen_addr, addr.weight);
                     }
-                  
                 },
                 None => {
                     println!("backend {} not found", front.backend);
@@ -50,7 +49,6 @@ impl Server {
                 let backend = Backend::new(
                     front.backend.clone(),
                     backend,
-                   
                 );
                 let lb = Proxy{ 
                     name: name.clone(),
@@ -99,7 +97,7 @@ impl Server {
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>>  {
         let proxies = self.proxies.clone();
         for proxy in proxies.iter() {
-            let back = proxy.backend.clone();
+            // let back = proxy.backend.clone();
             let p = proxy.clone();
             tokio::spawn(async move {
                 if let Err(e) = run_server(p.clone()).await {
@@ -122,10 +120,10 @@ async fn run_server(lb: Arc<Proxy>) ->  Result<(), Box<dyn std::error::Error>>  
 
     while let Ok((inbound,_)) = listner.accept().await {
         let thread_lb = lb.clone();
-        let err_lb = lb.clone();
+        // let err_lb = lb.clone();
 
         tokio::spawn(async move {
-            process(inbound,thread_lb).await;
+            let _ = process(inbound,thread_lb).await;
         });
     }
 

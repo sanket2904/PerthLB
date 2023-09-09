@@ -1,39 +1,29 @@
-use std::{net::{SocketAddr, TcpStream}, collections::HashMap, sync::{RwLock, Arc, mpsc::Sender}, time};
+use std::{net::{SocketAddr, TcpStream}, collections::HashMap, sync::{RwLock, Arc}, time};
 use rand::{distributions::WeightedIndex, prelude::Distribution, thread_rng};
-
-
-
-
-
 #[derive(Debug, Clone)]
-struct Wrr {
-    healthy: bool,
-    weight: u16,
-    weights_index: usize,
+pub struct Wrr {
+    pub healthy: bool,
+    pub weight: u16,
+    pub weights_index: usize,
 }
-
 #[derive(Debug, Clone)]
 pub struct ServerPool {
-    servers_map: HashMap<SocketAddr, Wrr>,
-    weights: Vec<u16>,
-    weighted_servers: Vec<SocketAddr>,
-    dist: Option<WeightedIndex<u16>>,
+    pub servers_map: HashMap<SocketAddr, Wrr>,
+    pub weights: Vec<u16>,
+    pub weighted_servers: Vec<SocketAddr>,
+    pub dist: Option<WeightedIndex<u16>>,
 }
-
 #[derive(Debug)]
 pub struct Backend {
     pub name: String,
     pub servers: Arc<RwLock<ServerPool>>,
     
 }
-
 impl ServerPool {
     pub fn new_servers(servers: HashMap<SocketAddr,Option<u16>>) -> Self {
-
         let mut back_servers = HashMap::new();
         let mut weights = Vec::new();
         let mut weight_servers = Vec::new();
-
         let mut index_count = 0;
         for (server, weight) in &servers {
             let mut server_weight = 1 as u16;
@@ -61,22 +51,17 @@ impl ServerPool {
             }
             index_count += 1;
         }
-
-        println!("weight_servers: {:?}", weight_servers);
-
-        let mut server_store = None;
+        let mut _server_store = None;
         match WeightedIndex::new(weights.clone()) {
             Ok(dist) => {
-                server_store = Some(dist);
+                _server_store = Some(dist);
             },
             Err(e) => {
                 println!("WeightedIndex error: {:?}", e);
-                server_store = None;
+                _server_store = None;
             }
         }
-
-        return ServerPool { servers_map: back_servers, weights, weighted_servers: weight_servers, dist: server_store };
-
+        return ServerPool { servers_map: back_servers, weights, weighted_servers: weight_servers, dist: _server_store };
     }   
 }
 
@@ -88,34 +73,34 @@ impl Backend {
             
         }
     }
-    async fn update_backends_health(&self, updates: &HashMap<SocketAddr, bool>) {
-        let mut servers = self.servers.write().unwrap();
-        let mut weights = servers.weights.clone();
-        let mut reset = false;
-        for (server, health) in updates {
-            if let Some(s) = servers.servers_map.get_mut(&server) {
-                s.healthy = *health;
-                reset = true;
-                if *health {
-                    weights[s.weights_index] = s.weight;
-                } else {
-                    weights[s.weights_index] = 0;
-                }
-            }
-        }
-        servers.weights = weights;
-        if reset {
-            match WeightedIndex::new(servers.weights.clone()) {
-                Ok(dist) => {
-                    servers.dist = Some(dist);
-                },
-                Err(e) => {
-                    println!("WeightedIndex error: {:?}", e);
-                    servers.dist = None;
-                }
-            }
-        }
-    }
+    // async fn update_backends_health(&self, updates: &HashMap<SocketAddr, bool>) {
+    //     let mut servers = self.servers.write().unwrap();
+    //     let mut weights = servers.weights.clone();
+    //     let mut reset = false;
+    //     for (server, health) in updates {
+    //         if let Some(s) = servers.servers_map.get_mut(&server) {
+    //             s.healthy = *health;
+    //             reset = true;
+    //             if *health {
+    //                 weights[s.weights_index] = s.weight;
+    //             } else {
+    //                 weights[s.weights_index] = 0;
+    //             }
+    //         }
+    //     }
+    //     servers.weights = weights;
+    //     if reset {
+    //         match WeightedIndex::new(servers.weights.clone()) {
+    //             Ok(dist) => {
+    //                 servers.dist = Some(dist);
+    //             },
+    //             Err(e) => {
+    //                 println!("WeightedIndex error: {:?}", e);
+    //                 servers.dist = None;
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 

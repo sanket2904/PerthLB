@@ -69,6 +69,7 @@ impl Config {
         let mut file_buf = File::open(file).unwrap();
         file_buf.read_to_string(&mut contents).unwrap();
         let decode: BaseConfig = toml::from_str(&contents).unwrap();
+        println!("decode: {:?}", decode);
         Ok(Config {
             filename: file.to_string(),
             base: decode,
@@ -85,6 +86,7 @@ impl Config {
     pub fn subscribe(self) -> Receiver<BaseConfig> {
         let (config_tx, config_rx) = std::sync::mpsc::channel();
         let filename = self.filename.clone();
+        // this thread will be responsible for watching the config file change
         std::thread::spawn(move || {
             let (tx, rx) = std::sync::mpsc::channel();
             let watcher: Result<RecommendedWatcher, notify::Error> = Watcher::new(tx, notify::Config::default());
